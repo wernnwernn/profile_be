@@ -62,7 +62,7 @@ const createMyProject = async (userId, payload) => {
     const profileId = await getProfileIdByUserId(userId);
     if (!profileId) throw new Error("ยังไม่มีโปรไฟล์ กรุณาบันทึกโปรไฟล์ก่อน");
 
-    const slug = String(payload?.slug || "").trim();
+    let slug = String(payload?.slug || "").trim();
     const title = String(payload?.title || "").trim();
     if (!slug) throw new Error("กรุณากรอก slug");
     if (!title) throw new Error("กรุณากรอก title");
@@ -83,6 +83,15 @@ const createMyProject = async (userId, payload) => {
     if (!validStatus.has(status)) throw new Error("status ไม่ถูกต้อง");
 
     return await withTx(async (conn) => {
+      let uniqueSlug = slug;
+      let counter = 1;
+      while (true) {
+        const check = await conn.query("SELECT id FROM projects WHERE profile_id = ? AND slug = ? LIMIT 1", [profileId, uniqueSlug]);
+        if (check.length === 0) break;
+        uniqueSlug = `${slug}-${counter}`;
+        counter++;
+      }
+
       const maxRows = await conn.query("SELECT COALESCE(MAX(sort_order),0) AS mx FROM projects WHERE profile_id = ?", [profileId]);
       const nextSort = Number(maxRows[0]?.mx || 0) + 1;
 
@@ -93,7 +102,7 @@ const createMyProject = async (userId, payload) => {
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())`,
         [
           profileId,
-          slug,
+          uniqueSlug,
           title,
           summary || null,
           description_md || null,
@@ -140,7 +149,9 @@ const updateMyProject = async (userId, id, payload) => {
           payload?.description_md !== undefined ? (payload.description_md ? String(payload.description_md) : null) : cur.description_md,
         role: payload?.role !== undefined ? String(payload.role || "").trim() : cur.role,
         tech_stack_json:
-          payload?.tech_stack_json !== undefined ? (payload.tech_stack_json ? JSON.stringify(payload.tech_stack_json) : null) : cur.tech_stack_json,
+          payload?.tech_stack_json !== undefined
+            ? (payload.tech_stack_json ? JSON.stringify(payload.tech_stack_json) : null)
+            : (typeof cur.tech_stack_json === "object" && cur.tech_stack_json ? JSON.stringify(cur.tech_stack_json) : cur.tech_stack_json),
         start_date: payload?.start_date !== undefined ? (payload.start_date ? String(payload.start_date) : null) : cur.start_date,
         end_date: payload?.end_date !== undefined ? (payload.end_date ? String(payload.end_date) : null) : cur.end_date,
         status: payload?.status !== undefined ? String(payload.status || "").trim() : cur.status,

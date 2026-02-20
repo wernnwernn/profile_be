@@ -18,30 +18,46 @@ const upsertMyProfile = async (userId, payload, ctx = {}) => {
     const user_id = Number(userId);
 
     return await withTx(async (conn) => {
+      const userRows = await conn.query("SELECT username FROM users WHERE id = ? LIMIT 1", [user_id]);
+      if (userRows.length === 0) throw new Error("ไม่พบผู้ใช้งานนี้");
+      const username = userRows[0].username;
+
       const beforeRows = await conn.query("SELECT * FROM profiles WHERE user_id = ? LIMIT 1", [user_id]);
       const before = beforeRows[0] || null;
 
-      if (!payload.slug) throw new Error("กรุณากรอก slug");
       if (!payload.display_name) throw new Error("กรุณากรอก display_name");
+
+      let show_content = null;
+      if (payload.show_content !== undefined) {
+        try {
+          // If it's already an object, use it directly. Otherwise try to parse
+          const parsed = typeof payload.show_content === 'string' ? JSON.parse(payload.show_content) : payload.show_content;
+          show_content = JSON.stringify(parsed);
+        } catch (e) {
+          show_content = null;
+        }
+      }
 
       if (!before) {
         const res = await conn.query(
           `INSERT INTO profiles
-           (user_id, slug, display_name, headline, about_md, email_public, phone_public, location,
-            avatar_media_id, resume_media_id, is_published, created_at, updated_at)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())`,
+           (user_id, slug, display_name, headline, about_md, email_public, phone_public, location, github_public,
+            avatar_media_id, resume_media_id, is_published, show_content, created_at, updated_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())`,
           [
             user_id,
-            payload.slug,
+            username,
             payload.display_name,
             payload.headline || null,
             payload.about_md || null,
             payload.email_public || null,
             payload.phone_public || null,
             payload.location || null,
+            payload.github_public || null,
             payload.avatar_media_id || null,
             payload.resume_media_id || null,
             payload.is_published ? 1 : 0,
+            show_content,
           ]
         );
         const id = Number(res.insertId);
@@ -65,20 +81,22 @@ const upsertMyProfile = async (userId, payload, ctx = {}) => {
 
       await conn.query(
         `UPDATE profiles
-         SET slug = ?, display_name = ?, headline = ?, about_md = ?, email_public = ?, phone_public = ?, location = ?,
-             avatar_media_id = ?, resume_media_id = ?, is_published = ?, updated_at = NOW()
+         SET slug = ?, display_name = ?, headline = ?, about_md = ?, email_public = ?, phone_public = ?, location = ?, github_public = ?,
+             avatar_media_id = ?, resume_media_id = ?, is_published = ?, show_content = ?, updated_at = NOW()
          WHERE user_id = ?`,
         [
-          payload.slug,
+          username,
           payload.display_name,
           payload.headline || null,
           payload.about_md || null,
           payload.email_public || null,
           payload.phone_public || null,
           payload.location || null,
+          payload.github_public || null,
           payload.avatar_media_id || null,
           payload.resume_media_id || null,
           payload.is_published ? 1 : 0,
+          show_content,
           user_id,
         ]
       );

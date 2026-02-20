@@ -16,6 +16,7 @@ const healthRouter = require("./controller/health");
 const authRouter = require("./controller/auth");
 const mediaRouter = require("./controller/media");
 const profilesRouter = require("./controller/profiles");
+const usersRouter = require("./controller/users");
 const profileLinksRouter = require("./controller/profileLinks");
 const skillsRouter = require("./controller/skills");
 const educationsRouter = require("./controller/educations");
@@ -48,6 +49,7 @@ app.use("/api", healthRouter);
 app.use("/api", authRouter);
 app.use("/api", mediaRouter);
 app.use("/api", profilesRouter);
+app.use("/api", usersRouter);
 
 // profile cms modules (me/*)
 app.use("/api", profileLinksRouter);

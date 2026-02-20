@@ -24,11 +24,22 @@ router.post("/media", requireAuth, upload.single("file"), async (req, res) => {
       width: null,
       height: null,
       alt_text: req.body?.alt_text || null,
+      user: req.user,
     });
 
     res.json(result);
   } catch (error) {
     console.error("Error upload media:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.post("/media/cache/refresh", requireAuth, async (req, res) => {
+  try {
+    const result = await mediaService.clearMediaCache();
+    res.json(result);
+  } catch (error) {
+    console.error("Error refresh media cache:", error);
     res.status(500).json({ error: error.message });
   }
 });

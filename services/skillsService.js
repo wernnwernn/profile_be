@@ -27,8 +27,8 @@ const createMySkill = async (userId, payload) => {
 
     const name = String(payload?.name || "").trim();
     const category = payload?.category !== undefined ? String(payload.category || "").trim() : null;
-    const level = payload?.level !== undefined && payload.level !== null && payload.level !== "" ? Number(payload.level) : null;
     const is_active = payload?.is_active === false ? 0 : 1;
+    
     if (!name) throw new Error("กรุณากรอก name");
 
     return await withTx(async (conn) => {
@@ -40,10 +40,11 @@ const createMySkill = async (userId, payload) => {
 
       const res = await conn.query(
         `INSERT INTO skills
-         (profile_id, name, category, level, sort_order, is_active, created_at, updated_at)
-         VALUES (?, ?, ?, ?, ?, ?, NOW(), NOW())`,
-        [profileId, name, category || null, Number.isFinite(level) ? level : null, nextSort, is_active]
+         (profile_id, name, category, sort_order, is_active, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, NOW(), NOW())`,
+        [profileId, name, category || null, nextSort, is_active]
       );
+      
       const id = Number(res.insertId);
       const rows = await conn.query("SELECT * FROM skills WHERE id = ?", [id]);
       return rows[0];
@@ -72,10 +73,6 @@ const updateMySkill = async (userId, id, payload) => {
       const next = {
         name: payload?.name !== undefined ? String(payload.name || "").trim() : cur.name,
         category: payload?.category !== undefined ? String(payload.category || "").trim() : cur.category,
-        level:
-          payload?.level !== undefined
-            ? (payload.level === null || payload.level === "" ? null : Number(payload.level))
-            : cur.level,
         is_active: payload?.is_active !== undefined ? (payload.is_active ? 1 : 0) : cur.is_active,
       };
 
@@ -83,9 +80,9 @@ const updateMySkill = async (userId, id, payload) => {
 
       await conn.query(
         `UPDATE skills
-         SET name = ?, category = ?, level = ?, is_active = ?, updated_at = NOW()
+         SET name = ?, category = ?, is_active = ?, updated_at = NOW()
          WHERE id = ? AND profile_id = ?`,
-        [next.name, next.category || null, Number.isFinite(next.level) ? next.level : null, next.is_active, skillId, profileId]
+        [next.name, next.category || null, next.is_active, skillId, profileId]
       );
 
       const rows = await conn.query("SELECT * FROM skills WHERE id = ?", [skillId]);

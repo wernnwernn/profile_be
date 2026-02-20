@@ -53,7 +53,6 @@ const createMyExperience = async (userId, payload) => {
     if (!title) throw new Error("กรุณากรอก title");
     if (!start_date) throw new Error("กรุณากรอก start_date");
 
-    const employment_type = payload?.employment_type !== undefined ? String(payload.employment_type || "").trim() : null;
     const location = payload?.location !== undefined ? String(payload.location || "").trim() : null;
     const end_date = payload?.end_date ? String(payload.end_date) : null;
     const is_current = payload?.is_current ? 1 : 0;
@@ -65,13 +64,12 @@ const createMyExperience = async (userId, payload) => {
 
       const res = await conn.query(
         `INSERT INTO experiences
-         (profile_id, company_name, title, employment_type, location, start_date, end_date, is_current, description_md, sort_order, created_at, updated_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())`,
+         (profile_id, company_name, title, location, start_date, end_date, is_current, description_md, sort_order, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())`,
         [
           profileId,
           company_name,
           title,
-          employment_type || null,
           location || null,
           start_date,
           end_date || null,
@@ -104,8 +102,6 @@ const updateMyExperience = async (userId, id, payload) => {
       const next = {
         company_name: payload?.company_name !== undefined ? String(payload.company_name || "").trim() : cur.company_name,
         title: payload?.title !== undefined ? String(payload.title || "").trim() : cur.title,
-        employment_type:
-          payload?.employment_type !== undefined ? String(payload.employment_type || "").trim() : cur.employment_type,
         location: payload?.location !== undefined ? String(payload.location || "").trim() : cur.location,
         start_date: payload?.start_date !== undefined ? String(payload.start_date || "").trim() : cur.start_date,
         end_date: payload?.end_date !== undefined ? (payload.end_date ? String(payload.end_date) : null) : cur.end_date,
@@ -120,13 +116,12 @@ const updateMyExperience = async (userId, id, payload) => {
 
       await conn.query(
         `UPDATE experiences
-         SET company_name = ?, title = ?, employment_type = ?, location = ?, start_date = ?, end_date = ?,
+         SET company_name = ?, title = ?, location = ?, start_date = ?, end_date = ?,
              is_current = ?, description_md = ?, updated_at = NOW()
          WHERE id = ? AND profile_id = ?`,
         [
           next.company_name,
           next.title,
-          next.employment_type || null,
           next.location || null,
           next.start_date,
           next.end_date || null,

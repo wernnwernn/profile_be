@@ -1,7 +1,7 @@
 // src/middlewares/httpLogger.js
 const morgan = require("morgan");
 
-morgan.token("rid", (req) => req.requestId);
+morgan.token("rid", (req) => req.requestId || "-");
 
 const formatLine = (tokens, req, res) =>
   [
@@ -9,10 +9,10 @@ const formatLine = (tokens, req, res) =>
     tokens.rid(req, res),
     tokens.method(req, res),
     tokens.url(req, res),
-    tokens.status(req, res),
-    `${tokens["response-time"](req, res)} ms`,
+    res.statusCode,
+    `${Number(tokens["response-time"](req, res) || 0).toFixed(1)} ms`,
     "-",
-    tokens.res(req, res, "content-length"),
+    tokens.res(req, res, "content-length") || "-",
   ].join(" ");
 
 const createHttpLogger = (opts = {}) => {
@@ -22,20 +22,26 @@ const createHttpLogger = (opts = {}) => {
     skipPaths = ["/api/health"],
   } = opts;
 
-  const makeSkip = (req, res) => skipPaths.includes(req.originalUrl);
+  const shouldSkip = (req) => {
+    const p = req.path || req.originalUrl || "";
+    return skipPaths.some((sp) => p === sp || p.startsWith(`${sp}/`));
+  };
 
   if (appEnv === "local" || appEnv === "dev") {
-    return morgan(formatLine, { skip: makeSkip });
+    return morgan(formatLine, { skip: (req) => shouldSkip(req) });
   }
 
   return morgan((tokens, req, res) => {
-    if (makeSkip(req, res)) return null;
+    if (shouldSkip(req)) return null;
 
-    const status = Number(tokens.status(req, res) || res.statusCode || 0);
-    const rt = Number(tokens["response-time"](req, res) || 0);
+    const status = Number(res.statusCode || 0);
+
+    const rtRaw = tokens["response-time"](req, res);
+    const rt = Number(rtRaw);
+    const responseTimeMs = Number.isFinite(rt) ? rt : 0;
 
     const isError = status >= 400;
-    const isSlow = rt > slowMs;
+    const isSlow = responseTimeMs > slowMs;
 
     if (isError || isSlow) return formatLine(tokens, req, res);
     return null;
