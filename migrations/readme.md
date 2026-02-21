@@ -3,7 +3,7 @@
 เราใช้ library ที่ชื่อว่า **Knex** เพื่อช่วยในการสร้างไฟล์สคริปต์ db-migration
 สร้างไฟล์ migration ใหม่ด้วยคำสั่ง:
 ```bash
-npx knex migrate:make <migration_name>
+npx knex migrate:make add_show_content_to_profiles
 ```
 ไฟล์สคริปต์ที่สร้างขึ้นจะถูกเก็บไว้ในโฟลเดอร์ `migrations` และจะมีชื่อไฟล์ตามรูปแบบ `YYYYMMDDHHMMSS_create_users_table.js` ซึ่งช่วยให้สามารถติดตามลำดับการเปลี่ยนแปลงได้
 การรัน db-migration

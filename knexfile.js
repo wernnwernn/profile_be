@@ -1,7 +1,6 @@
 // knexfile.js
 const config = require("./config");
 
-
 const base = {
     client: "mysql2",
     connection: config.mariadb,
