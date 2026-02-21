@@ -1,3 +1,10 @@
+const path = require("path");
+const dotenv = require("dotenv");
+
+const appEnv = String(process.env.APP_ENV || "local").toLowerCase();
+const envFile = appEnv === "prod" || appEnv === "production" ? ".env.prod" : ".env";
+dotenv.config({ path: path.resolve(process.cwd(), envFile) });
+
 // server.js
 const loaded = require("./config/env");
 const express = require("express");
