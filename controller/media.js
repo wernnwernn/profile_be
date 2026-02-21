@@ -47,10 +47,14 @@ router.post("/media/cache/refresh", requireAuth, async (req, res) => {
 // list (admin)
 router.get("/media", requireAuth, async (req, res) => {
   try {
+    const userId = Number(req.user?.id);
+    if (!Number.isInteger(userId)) return res.status(401).json({ error: "กรุณาเข้าสู่ระบบ" });
+
     const q = req.query?.q;
     const limit = req.query?.limit;
     const offset = req.query?.offset;
-    const rows = await mediaService.listMediaMeta({ q, limit, offset });
+
+    const rows = await mediaService.listMediaMeta({ userId, q, limit, offset });
     res.json(rows);
   } catch (error) {
     console.error("Error list media:", error);

@@ -104,8 +104,11 @@ const getMediaBinary = async (id) => {
   }
 };
 
-const listMediaMeta = async ({ q, limit = 50, offset = 0 } = {}) => {
+const listMediaMeta = async ({ userId, q, limit = 50, offset = 0 } = {}) => {
   try {
+    const uid = Number(userId);
+    if (!Number.isInteger(uid)) throw new Error("userId ไม่ถูกต้อง");
+
     const lim = Math.min(Math.max(Number(limit) || 50, 1), 200);
     const off = Math.max(Number(offset) || 0, 0);
     const keyword = String(q || "").trim();
@@ -116,10 +119,11 @@ const listMediaMeta = async ({ q, limit = 50, offset = 0 } = {}) => {
         const rows = await conn.query(
           `SELECT id, original_name, mime_type, size_bytes, width, height, alt_text, created_at, updated_at
            FROM media
-           WHERE original_name LIKE ? OR mime_type LIKE ?
+           WHERE user_id = ?
+             AND (original_name LIKE ? OR mime_type LIKE ?)
            ORDER BY id DESC
            LIMIT ? OFFSET ?`,
-          [like, like, lim, off]
+          [uid, like, like, lim, off]
         );
         return normalizeRows(rows);
       }
@@ -127,9 +131,10 @@ const listMediaMeta = async ({ q, limit = 50, offset = 0 } = {}) => {
       const rows = await conn.query(
         `SELECT id, original_name, mime_type, size_bytes, width, height, alt_text, created_at, updated_at
          FROM media
+         WHERE user_id = ?
          ORDER BY id DESC
          LIMIT ? OFFSET ?`,
-        [lim, off]
+        [uid, lim, off]
       );
       return normalizeRows(rows);
     });
